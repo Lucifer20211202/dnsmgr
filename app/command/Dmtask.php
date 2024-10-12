@@ -1,13 +1,11 @@
 <?php
-declare (strict_types = 1);
+declare (strict_types=1);
 
 namespace app\command;
 
 use Exception;
 use think\console\Command;
 use think\console\Input;
-use think\console\input\Argument;
-use think\console\input\Option;
 use think\console\Output;
 use think\facade\Db;
 use think\facade\Config;
@@ -24,40 +22,42 @@ class Dmtask extends Command
 
     protected function execute(Input $input, Output $output)
     {
-        $res = Db::name('config')->cache('configs',0)->column('value','key');
+        $res = Db::name('config')->cache('configs', 0)->column('value', 'key');
         Config::set($res, 'sys');
 
         config_set('run_error', '');
-        if(!extension_loaded('swoole')){
+        if (!extension_loaded('swoole')) {
             $output->writeln('[Error] 未安装Swoole扩展');
             config_set('run_error', '未安装Swoole扩展');
             return;
         }
-        try{
+        try {
             $output->writeln('进程启动成功.');
             $this->runtask();
-        }catch(Exception $e){
+        } catch (Exception $e) {
             $output->writeln('[Error] '.$e->getMessage());
             config_set('run_error', $e->getMessage());
         }
     }
 
-    private function runtask(){
-        \Co::set(['hook_flags'=> SWOOLE_HOOK_ALL]);
-        \Co\run(function() {
+    private function runtask()
+    {
+        \Co::set(['hook_flags' => SWOOLE_HOOK_ALL]);
+        \Co\run(function () {
             $date = date("Ymd");
             $count = config_get('run_count', null, true) ?? 0;
-            while(true){
+            while (true) {
                 sleep(1);
-                if($date != date("Ymd")){
+                if ($date != date("Ymd")) {
                     $count = 0;
                     $date = date("Ymd");
                 }
 
-                $rows = Db::name('dmtask')->where('checknexttime', '<=', time())->where('active', 1)->order('id', 'ASC')->select();
-                foreach($rows as $row){
-                    \go(function () use($row) {
-                        try{
+                $rows = Db::name('dmtask')->where('checknexttime', '<=', time())->where('active', 1)->order('id',
+                    'ASC')->select();
+                foreach ($rows as $row) {
+                    \go(function () use ($row) {
+                        try {
                             (new TaskRunner())->execute($row);
                         } catch (\Swoole\ExitException $e) {
                             echo $e->getStatus()."\n";
@@ -66,7 +66,7 @@ class Dmtask extends Command
                         }
                     });
                     Db::name('dmtask')->where('id', $row['id'])->update([
-                        'checktime' => time(),
+                        'checktime'     => time(),
                         'checknexttime' => time() + $row['frequency']
                     ]);
                     $count++;

@@ -11,16 +11,16 @@
 use think\facade\Route;
 
 Route::pattern([
-    'id'   => '\d+',
+    'id' => '\d+',
 ]);
 
 Route::any('/install', 'install/index')
-->middleware(\app\middleware\ViewOutput::class);
+    ->middleware(\app\middleware\ViewOutput::class);
 
 Route::get('/verifycode', 'auth/verifycode')->middleware(\think\middleware\SessionInit::class)
-->middleware(\app\middleware\ViewOutput::class);
+    ->middleware(\app\middleware\ViewOutput::class);
 Route::any('/login', 'auth/login')->middleware(\think\middleware\SessionInit::class)
-->middleware(\app\middleware\ViewOutput::class);
+    ->middleware(\app\middleware\ViewOutput::class);
 Route::get('/logout', 'auth/logout');
 Route::any('/quicklogin', 'auth/quicklogin');
 Route::any('/dmtask/status', 'dmonitor/status');
@@ -36,7 +36,7 @@ Route::group(function () {
     Route::post('/user/data', 'user/user_data');
     Route::post('/user/op', 'user/user_op');
     Route::get('/user', 'user/user');
-    
+
     Route::post('/log/data', 'user/log_data');
     Route::get('/log', 'user/log');
 
@@ -81,12 +81,12 @@ Route::group(function () {
     Route::any('/optimizeip/opipform/:action', 'optimizeip/opipform');
 
 })->middleware(\app\middleware\CheckLogin::class)
-->middleware(\app\middleware\ViewOutput::class);
+    ->middleware(\app\middleware\ViewOutput::class);
 
 Route::group('api', function () {
     Route::post('/domain/:id', 'domain/domain_info');
     Route::post('/domain', 'domain/domain_data');
-    
+
     Route::post('/record/data/:id', 'domain/record_data');
     Route::post('/record/add/:id', 'domain/record_add');
     Route::post('/record/update/:id', 'domain/record_update');
@@ -97,6 +97,6 @@ Route::group('api', function () {
 
 })->middleware(\app\middleware\AuthApi::class);
 
-Route::miss(function() {
+Route::miss(function () {
     return response('404 Not Found')->code(404);
 });

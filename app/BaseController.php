@@ -1,5 +1,5 @@
 <?php
-declare (strict_types = 1);
+declare (strict_types=1);
 
 namespace app;
 
@@ -46,7 +46,7 @@ abstract class BaseController
      */
     public function __construct(App $app)
     {
-        $this->app     = $app;
+        $this->app = $app;
         $this->request = $this->app->request;
 
         // 控制器初始化
@@ -62,10 +62,10 @@ abstract class BaseController
     /**
      * 验证数据
      * @access protected
-     * @param  array        $data     数据
-     * @param  string|array $validate 验证器名或者验证规则数组
-     * @param  array        $message  提示信息
-     * @param  bool         $batch    是否批量验证
+     * @param  array  $data  数据
+     * @param  string|array  $validate  验证器名或者验证规则数组
+     * @param  array  $message  提示信息
+     * @param  bool  $batch  是否批量验证
      * @return array|string|true
      * @throws ValidateException
      */
@@ -79,8 +79,8 @@ abstract class BaseController
                 // 支持场景
                 [$validate, $scene] = explode('.', $validate);
             }
-            $class = false !== strpos($validate, '\\') ? $validate : $this->app->parseClass('validate', $validate);
-            $v     = new $class();
+            $class = str_contains($validate, '\\') ? $validate : $this->app->parseClass('validate', $validate);
+            $v = new $class();
             if (!empty($scene)) {
                 $v->scene($scene);
             }
@@ -90,31 +90,34 @@ abstract class BaseController
 
         // 是否批量验证
         if ($batch || $this->batchValidate) {
-            $v->batch(true);
+            $v->batch();
         }
 
-        return $v->failException(true)->check($data);
+        return $v->failException()->check($data);
     }
 
 
     protected function alert($code, $msg = '', $url = null, $wait = 3)
     {
         if ($url) {
-            $url = (strpos($url, '://') || 0 === strpos($url, '/')) ? $url : (string)$this->app->route->buildUrl($url);
+            $url = (strpos($url, '://') || str_starts_with($url,
+                    '/')) ? $url : (string) $this->app->route->buildUrl($url);
         }
-        if(empty($msg)) $msg = '未知错误';
+        if (empty($msg)) {
+            $msg = '未知错误';
+        }
 
         if (request()->isApi) {
-            return json(['code'=>$code=='success'?0:-1, 'msg'=>$msg]);
+            return json(['code' => $code == 'success' ? 0 : -1, 'msg' => $msg]);
         }
         if (request()->isAjax()) {
-            return json(['code'=>$code=='success'?0:-1, 'msg'=>$msg, 'url'=>$url]);
+            return json(['code' => $code == 'success' ? 0 : -1, 'msg' => $msg, 'url' => $url]);
         }
-        
+
         View::assign([
             'code' => $code,
-            'msg' => $msg,
-            'url' => $url,
+            'msg'  => $msg,
+            'url'  => $url,
             'wait' => $wait,
         ]);
         return View::fetch(app()->getBasePath().'view/dispatch_jump.html');

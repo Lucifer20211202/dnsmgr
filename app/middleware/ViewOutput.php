@@ -3,6 +3,7 @@ declare (strict_types=1);
 
 namespace app\middleware;
 
+use Closure;
 use think\facade\View;
 
 class ViewOutput
@@ -10,11 +11,11 @@ class ViewOutput
     /**
      * 处理请求
      *
-     * @param \think\Request $request
-     * @param \Closure $next
+     * @param  \think\Request  $request
+     * @param  Closure  $next
      * @return Response
      */
-    public function handle($request, \Closure $next)
+    public function handle($request, Closure $next)
     {
         View::assign('islogin', $request->islogin);
         View::assign('user', $request->user);

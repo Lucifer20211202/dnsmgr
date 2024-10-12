@@ -1,4 +1,5 @@
 <?php
+
 namespace app\lib;
 
 use think\Facade;
@@ -12,6 +13,6 @@ class NewDb extends Facade
      */
     protected static function getFacadeClass()
     {
-        return 'app\lib\NewDbManager';
+        return NewDbManager::class;
     }
 }

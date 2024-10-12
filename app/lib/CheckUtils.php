@@ -14,29 +14,29 @@ class CheckUtils
                 $ip = gethostbyname($ip);
             }
             if (!empty($ip) && filter_var($ip, FILTER_VALIDATE_IP)) {
-                $port = isset($urlarr['port']) ? $urlarr['port'] : ($urlarr['scheme'] == 'https' ? 443 : 80);
-                $resolve = $urlarr['host'] . ':' . $port . ':' . $ip;
+                $port = $urlarr['port'] ?? ($urlarr['scheme'] == 'https' ? 443 : 80);
+                $resolve = $urlarr['host'].':'.$port.':'.$ip;
             }
         }
         $ch = curl_init();
-        if($proxy){
+        if ($proxy) {
             $proxy_server = config_get('proxy_server');
             $proxy_port = intval(config_get('proxy_port'));
             $proxy_userpwd = config_get('proxy_user').':'.config_get('proxy_pwd');
             $proxy_type = config_get('proxy_type');
-            if($proxy_type == 'https'){
+            if ($proxy_type == 'https') {
                 $proxy_type = CURLPROXY_HTTPS;
-            }elseif($proxy_type == 'sock4'){
+            } elseif ($proxy_type == 'sock4') {
                 $proxy_type = CURLPROXY_SOCKS4;
-            }elseif($proxy_type == 'sock5'){
+            } elseif ($proxy_type == 'sock5') {
                 $proxy_type = CURLPROXY_SOCKS5;
-            }else{
+            } else {
                 $proxy_type = CURLPROXY_HTTP;
             }
             curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_BASIC);
             curl_setopt($ch, CURLOPT_PROXY, $proxy_server);
             curl_setopt($ch, CURLOPT_PROXYPORT, $proxy_port);
-            if($proxy_userpwd != ':'){
+            if ($proxy_userpwd != ':') {
                 curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy_userpwd);
             }
             curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy_type);
@@ -48,11 +48,12 @@ class CheckUtils
         $httpheader[] = "Accept-Language: zh-CN,zh;q=0.8";
         $httpheader[] = "Connection: close";
         curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36');
+        curl_setopt($ch, CURLOPT_USERAGENT,
+            'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-        if(!empty($resolve)){
+        if (!empty($resolve)) {
             curl_setopt($ch, CURLOPT_DNS_USE_GLOBAL_CACHE, false);
             curl_setopt($ch, CURLOPT_RESOLVE, [$resolve]);
         }
@@ -63,19 +64,22 @@ class CheckUtils
             $errmsg = curl_error($ch);
         }
         $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if($status && ($httpcode < 200 || $httpcode >= 400)){
+        if ($status && ($httpcode < 200 || $httpcode >= 400)) {
             $status = false;
             $errmsg = 'http_code='.$httpcode;
         }
         $usetime = round(curl_getinfo($ch, CURLINFO_TOTAL_TIME) * 1000);
         curl_close($ch);
-        return ['status'=>$status, 'errmsg'=>$errmsg, 'usetime'=>$usetime];
+        return ['status' => $status, 'errmsg' => $errmsg, 'usetime' => $usetime];
     }
 
-    public static function tcp($target, $port, $timeout){
-        if(!filter_var($target,FILTER_VALIDATE_IP) && checkDomain($target)){
+    public static function tcp($target, $port, $timeout)
+    {
+        if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
             $target = gethostbyname($target);
-            if(!$target)return ['status'=>false, 'error'=>'DNS resolve failed', 'usetime'=>0];
+            if (!$target) {
+                return ['status' => false, 'error' => 'DNS resolve failed', 'usetime' => 0];
+            }
         }
         $starttime = getMillisecond();
         $fp = @fsockopen($target, $port, $errCode, $errStr, $timeout);
@@ -86,27 +90,32 @@ class CheckUtils
             $status = false;
         }
         $endtime = getMillisecond();
-        $usetime = $endtime-$starttime;
-        return ['status'=>$status, 'errmsg'=>$errStr, 'usetime'=>$usetime];
+        $usetime = $endtime - $starttime;
+        return ['status' => $status, 'errmsg' => $errStr, 'usetime' => $usetime];
     }
 
-    public static function ping($target){
-        if(!function_exists('exec'))return ['status'=>false, 'error'=>'exec函数不可用', 'usetime'=>0];
-        if(!filter_var($target,FILTER_VALIDATE_IP) && checkDomain($target)){
-            $target = gethostbyname($target);
-            if(!$target)return ['status'=>false, 'error'=>'DNS resolve failed', 'usetime'=>0];
+    public static function ping($target)
+    {
+        if (!function_exists('exec')) {
+            return ['status' => false, 'error' => 'exec函数不可用', 'usetime' => 0];
         }
-        if(!filter_var($target,FILTER_VALIDATE_IP)){
-            return ['status'=>false, 'error'=>'Invalid IP address', 'usetime'=>0];
+        if (!filter_var($target, FILTER_VALIDATE_IP) && checkDomain($target)) {
+            $target = gethostbyname($target);
+            if (!$target) {
+                return ['status' => false, 'error' => 'DNS resolve failed', 'usetime' => 0];
+            }
+        }
+        if (!filter_var($target, FILTER_VALIDATE_IP)) {
+            return ['status' => false, 'error' => 'Invalid IP address', 'usetime' => 0];
         }
         $timeout = 1;
         exec('ping -c 1 -w '.$timeout.' '.$target.'', $output, $return_var);
         $usetime = !empty($output[1]) ? round(getSubstr($output[1], 'time=', ' ms')) : 0;
         $errmsg = null;
-        if($return_var !== 0){
-            $usetime = $usetime == 0 ? $timeout*1000 : $usetime;
+        if ($return_var !== 0) {
+            $usetime = $usetime == 0 ? $timeout * 1000 : $usetime;
             $errmsg = 'ping timeout';
         }
-        return ['status'=>$return_var===0, 'errmsg'=>$errmsg, 'usetime'=>$usetime];
+        return ['status' => $return_var === 0, 'errmsg' => $errmsg, 'usetime' => $usetime];
     }
 }
